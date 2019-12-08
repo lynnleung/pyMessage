@@ -5,18 +5,19 @@ import ctypes
 import binascii
 
 #声明需要调用的C函数
-from past.builtins import reduce
+#from past.builtins import reduce
 
 mylib = CDLL('\workspace\CRCcalcForPy.so')
 
 #声明消息集合
 #todo:将同一条消息以及其使用的函数非共同使用的地方放置到一个文件中去
 msgID = ['0x01_network_control',
-         '0x01_network_control',
          '0x12_running_data',
          '0x13_configure_info',
          '0x14_timing_info']
-msgType=['0x01_report','0x02_change','0x03_query']
+msgType=['0x01_report',
+         '0x02_change',
+         '0x03_query']
 msgIdWifiEnroll=['0x00_No_enroll_request',
                  '0x01_request_for_BLE_enroll',
                  '0x02_request_softAP_enroll',
@@ -237,8 +238,12 @@ class MY_GUI(Frame):
 
     #计算raw message
     def calculation_raw_message_network_control(self):
-
-        self.network_control_raw_message_dataA = [self.message_id_raw_value,
+        #network control消息URAT发出的支持：change;query;
+        #when the message type is query, the data length of data A should be 2 and
+        #no CRC
+        #当消息类型是report的时候，报所有
+        if self.msg_type_value == '02':
+            self.network_control_raw_message_dataA = [self.message_id_raw_value,
                                                   self.msg_type_value,
                                                   self.netctrl_wifi_enroll_value,
                                                   self.netctrl_wifi_status_value,
@@ -247,9 +252,9 @@ class MY_GUI(Frame):
                                                   self.netctrl_signal_stren,
                                                   self.netctrl_reserved
                                                   ]
-        self.header_frame_length = len(self.network_control_raw_message_dataA)
-        self.frame_length_list = self.frame_length_get_hex_msg(self.header_frame_length,2)
-        self.netctrl_crc_message = [self.header_device_code,
+            self.header_frame_length = len(self.network_control_raw_message_dataA)
+            self.frame_length_list = self.frame_length_get_hex_msg(self.header_frame_length,2)
+            self.netctrl_crc_message = [self.header_device_code,
                                     self.frame_length_list[0],
                                     self.frame_length_list[1],
                                     self.header_sequence_id,
@@ -262,15 +267,15 @@ class MY_GUI(Frame):
                                     self.netctrl_signal_stren,
                                     self.netctrl_reserved
                                     ]
-        self.netctrl_crc_message_hex = []
-        for i in range(len(self.netctrl_crc_message)):
-            temp = '0x'+self.netctrl_crc_message[i]
-            #change to int is OK
-            temp1 = int(temp, base=16)
-            self.netctrl_crc_message_hex.append(temp1)
-        self.crc_result_string = ''
-        self.crc_result_string = self.CRC_calculation(self.netctrl_crc_message_hex)
-        self.netctrl_raw_message_with_crc = [self.header_init_byte,
+            self.netctrl_crc_message_hex = []
+            for i in range(len(self.netctrl_crc_message)):
+                temp = '0x'+self.netctrl_crc_message[i]
+                #change to int is OK
+                temp1 = int(temp, base=16)
+                self.netctrl_crc_message_hex.append(temp1)
+            self.crc_result_string = ''
+            self.crc_result_string = self.CRC_calculation(self.netctrl_crc_message_hex)
+            self.netctrl_raw_message_with_crc = [self.header_init_byte,
                                              self.header_device_code,
                                              self.frame_length_list[0],
                                              self.frame_length_list[1],
@@ -285,11 +290,51 @@ class MY_GUI(Frame):
                                              self.netctrl_reserved,
                                              self.crc_result_string
                                         ]
-        print(self.netctrl_crc_message_hex)
-        print(self.netctrl_raw_message_with_crc)
-        self.input_length_2_bytes.insert(0,self.header_frame_length)
-        for i in range(len(self.netctrl_raw_message_with_crc)):
-            self.message_id_frame_raw_message.insert(i*2,self.netctrl_raw_message_with_crc[i])
+            #print(self.netctrl_crc_message_hex)
+            #print(self.netctrl_raw_message_with_crc)
+            # todo: should clear the entry of message before insert!
+            self.input_length_2_bytes.insert(0,self.header_frame_length)
+            for i in range(len(self.netctrl_raw_message_with_crc)):
+                self.message_id_frame_raw_message.insert(i*2,self.netctrl_raw_message_with_crc[i])
+        elif self.msg_type_value == '03':
+            self.network_control_raw_message_dataA = [self.message_id_raw_value,
+                                                      self.msg_type_value
+                                                      ]
+            self.header_frame_length = len(self.network_control_raw_message_dataA)
+            self.frame_length_list = self.frame_length_get_hex_msg(self.header_frame_length, 2)
+            self.netctrl_crc_message = [self.header_device_code,
+                                        self.frame_length_list[0],
+                                        self.frame_length_list[1],
+                                        self.header_sequence_id,
+                                        self.message_id_raw_value,
+                                        self.msg_type_value
+                                        ]
+            self.netctrl_crc_message_hex = []
+            for i in range(len(self.netctrl_crc_message)):
+                temp = '0x' + self.netctrl_crc_message[i]
+                # change to int is OK
+                temp1 = int(temp, base=16)
+                self.netctrl_crc_message_hex.append(temp1)
+            self.crc_result_string = ''
+            self.crc_result_string = self.CRC_calculation(self.netctrl_crc_message_hex)
+            self.netctrl_raw_message_with_crc = [self.header_init_byte,
+                                                 self.header_device_code,
+                                                 self.frame_length_list[0],
+                                                 self.frame_length_list[1],
+                                                 self.header_sequence_id,
+                                                 self.message_id_raw_value,
+                                                 self.msg_type_value,
+                                                 self.crc_result_string
+                                                 ]
+            self.input_length_2_bytes.insert(0, self.header_frame_length)
+            #todo: should clear the entry of message before insert!
+            for i in range(len(self.netctrl_raw_message_with_crc)):
+                self.message_id_frame_raw_message.insert(i * 2, self.netctrl_raw_message_with_crc[i])
+        elif self.msg_type_value == '01':
+            self.message_id_frame_raw_message.insert(0,"Network control message do not support report type!")
+        else:
+            raise ValueError("Error message type!")
+
 
     def msg_id_choose(self, *args):
 #        print(self.message_id_raw_value)

@@ -11,7 +11,7 @@ mylib = CDLL('\workspace\CRCcalcForPy.so')
 
 #声明消息集合
 msgID = ['0x01_network_control',
-         '0x11_device_info'
+         '0x11_device_info',
          '0x12_running_data',
          '0x13_configure_info',
          '0x14_timing_info']
@@ -32,35 +32,7 @@ msgIdWifiStatus=['0x00_No_wifi_config',
                  '0x04_in_softAP_mode',
                  '0xFF_Uninitialized']
 msgIdSignalStren=['0x01', '0x02', '0x03', '0x04', '0x05', '0x06', '0x07', '0x08', '0x09', '0xFF']
-
-
-
-#定义此类用于计算帧长度，并显示帧长度，这是因为帧长度为2byte
-class msgByteStruc():
-    byteLength=0
-    byteValue=0
-    byte_list = []
-    def get_msg_value(self):
-        return self.byteValue
-
-    def get_msg_length(self):
-        return self.byteLength
-
-    def set_msg_value(self,valueInt):
-        self.byteValue = valueInt
-
-    def get_hex_msg(self):
-        if self.byteLength == 0:
-            return ''
-        elif self.byteLength == 1:
-            self.byte_list.append(format(self.byteValue,'02x'))
-            return self.byte_list
-        elif self.byteLength == 2:
-            self.byte_list.append(format(0,'02x'))
-            self.byte_list.append(format(self.byteValue,'02x'))
-            return self.byte_list
-        else:
-            raise ValueError('byte length is larger than 2!')
+devModelId=['0x00_Thermostat']
 
 class MY_GUI(Frame):
 #构造函数
@@ -109,8 +81,8 @@ class MY_GUI(Frame):
         self.input_seq_1_bytes = Entry(self.init_window_name, textvariable=self.label_seq_1_bytes_value, width=8)
         self.input_seq_1_bytes.place(x=180, y=60)
         self.input_seq_length = 1
-        self.seqLength = msgByteStruc()
-        self.seqLength.byteLength = 2
+#        self.seqLength = msgByteStruc()
+#        self.seqLength.byteLength = 2
 
         # Network control:message id;data A area
         # message id: 0x01 network control;0x11 device info;0x12 running data;0x13 config info;
@@ -129,7 +101,7 @@ class MY_GUI(Frame):
         # Network control:message type
         # 针对每一条消息添加一个框架
         #message id
-        self.message_id_frame = Frame(self.init_window_name)
+        self.message_id_frame = Frame(self.init_window_name,width=500, height=100, bg='red')
         self.message_id_frame.place(x=30, y=100)
         self.message_id_frame_label = Label(self.message_id_frame,text='Network Control 0x01')
         self.message_id_frame_label.grid(row=0,column=0,sticky=W)
@@ -212,32 +184,39 @@ class MY_GUI(Frame):
 
 
         #Device information
-        self.device_info_frame = Frame(self.init_window_name)
-        self.device_info_frame.place(x=30,y=200)
-        self.device_info_frame_label = Label(self.device_info_frame, text='Device information 0x11')
-        self.device_info_frame_label.grid(row=0,column=0,sticky=W)
+        self.device_infor_frame = Frame(self.init_window_name,width=500,height=200,bg='red')
+        self.device_info_frame_label = Label(self.message_id_frame, text='Device information 0x11')
+        self.device_info_frame_label.grid(row=13,column=0,sticky=W)
         #message type
         self.device_info_msg_type_label = Label(self.message_id_frame, text='message type')
-        self.device_info_msg_type_label.grid(row=5, column=0, sticky=W)
+        self.device_info_msg_type_label.grid(row=15, column=0, sticky=W)
         self.device_info_msg_type_text = StringVar(value=msgType[0])
         self.device_info_msg_type_combo = Combobox(self.message_id_frame, width=10,
-                                                    textvariable=self.message_id_frame_type_text)
+                                                    textvariable=self.device_info_msg_type_text)
         self.device_info_msg_type_combo['values'] = msgType
-        self.device_info_msg_type_combo.grid(row=10, column=0, padx=0, pady=20)
+        self.device_info_msg_type_combo.grid(row=20, column=0, padx=0, pady=20)
         self.device_info_msg_type_value = self.device_info_msg_type_combo.get()[2:4]
         self.device_info_msg_type_combo.bind("<<ComboboxSelected>>", self.msg_type)
 
+        #device type：always 00
+        self.device_info_device_type_label = Label(self.message_id_frame, text='Device type')
+        self.device_info_device_type_label.grid(row=15, column=10, sticky=W)
+        self.device_info_device_type_string = '00'
+        self.device_info_device_type_text = StringVar(value=self.device_info_device_type_string)
+        self.device_info_device_type_entry = Entry(self.message_id_frame,
+                                                    textvariable=self.device_info_device_type_text, width=5)
+        self.device_info_device_type_entry.grid(row=20, column=10, padx=0, pady=5,sticky=W)
 
-
-
-
-
-
-
-
-
-
-
+        #model id
+        self.device_info_model_id_label = Label(self.message_id_frame, text='model id')
+        self.device_info_model_id_label.grid(row=15, column=11, sticky=W)
+        self.device_info_model_id_text = StringVar(value=devModelId[0])
+        self.device_info_model_id_combo = Combobox(self.message_id_frame, width=15,
+                                                           textvariable=self.device_info_model_id_text)
+        self.device_info_model_id_combo['values'] = msgIdWifiEnroll
+        self.device_info_model_id_combo.grid(row=20, column=11, padx=0, pady=15,sticky=W)
+        self.device_info_model_id_value = self.device_info_model_id_combo.get()[2:4]
+        self.device_info_model_id_combo.bind("<<ComboboxSelected>>", self.dev_info_model_id)
 
 
 
@@ -447,6 +426,9 @@ class MY_GUI(Frame):
         mac_address_input_string = self.message_id_frame_macAddr_entry.get()
         self.netctrl_MAC_addr_1 = mac_address_input_string[0:1]
         self.netctrl_MAC_addr_2 = mac_address_input_string[2:3]
+
+    def dev_info_model_id(self,*args):
+        pass
 
 #主线程
 if __name__ == '__main__':
